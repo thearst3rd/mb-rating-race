@@ -51,7 +51,7 @@ let missionReference: Record<number, Mission> | undefined = undefined;
 
 async function getMissions(): Promise<Record<string, Mission> | undefined> {
 	let missions: Record<string, Mission> = {}
-	const res = await fetch("https://marbleblast.com/pq/leader/api/Mission/GetMissionList.php");
+	const res = await fetch("https://marbleblast.com/pq/leader/api/Mission/GetMissionList.php?gameType=MultiPlayer");
 	if (res.status !== 200)
 		return undefined;
 
@@ -82,6 +82,10 @@ function calcMissions(missionList: Array<number>): Record<string, Record<string,
 
 	missionList.forEach(missionId => {
 		const mission = (missionReference as Record<number, Mission>)[missionId];
+		if (mission == null) {
+			console.log("wtf? Missing mission: " + missionId);
+			return;
+		}
 		if (currentGame === undefined || mission.game_name !== lastGame) {
 			lastDifficulty = undefined;
 			currentDifficulty = undefined;
@@ -159,6 +163,20 @@ function calcExceptions(data: Record<string, [string, string]>) {
 	return exceptions;
 }
 
+function sortScore(a: Score, b: Score): number {
+	if (a.score_type !== b.score_type) {
+		if (a.score_type === "score")
+			return 1;
+		else
+			return -1;
+	}
+	if (a.score_type === "score") {
+		return b.score - a.score;
+	} else /* if (a.score_type === "time") */ {
+		return a.score - b.score;
+	}
+}
+
 function calcScores(scores: Array<Score>): Array<Player> {
 	const players: Record<string, Player> = {};
 	// Figure out each player's best score for each level
@@ -170,7 +188,7 @@ function calcScores(scores: Array<Score>): Array<Player> {
 		const player = players[score.name];
 		const mission = (missionReference as Record<number, Mission>)[score.mission_id];
 		const prevScore = player.scores[mission.game_name][mission.difficulty_name][mission.id];
-		if (prevScore === null || (score.rating > prevScore.rating)) {
+		if (prevScore === null || sortScore(score, prevScore) < 0) {
 			score.timestamp = new Date(score.timestamp + "Z");
 			player.scores[mission.game_name][mission.difficulty_name][mission.id] = score;
 		}
@@ -187,9 +205,9 @@ function calcScores(scores: Array<Score>): Array<Player> {
 				for (const missionId in diff) {
 					const score = diff[missionId];
 					if (score) {
-						player.totals.total += score.rating;
-						gameTotal.total += score.rating;
-						gameTotal.difficulties[difficultyName] += score.rating;
+						player.totals.total += score.score;
+						gameTotal.total += score.score;
+						gameTotal.difficulties[difficultyName] += score.score;
 					}
 				}
 			}
@@ -220,6 +238,7 @@ function calcScores(scores: Array<Score>): Array<Player> {
 }
 
 let currentlyPolling = false;
+let printedSkipPolling = false;
 
 function shouldPoll(): boolean {
 	if (lastUpdated < new Date("1971-01-01T00:00:00Z"))
@@ -249,9 +268,12 @@ async function pollScores() {
 	}
 
 	if (!shouldPoll()) {
-		console.info("Skipping polling");
+		if (!printedSkipPolling)
+			console.info("Skipping polling");
+		printedSkipPolling = true;
 		return;
 	}
+	printedSkipPolling = false;
 
 	currentlyPolling = true;
 

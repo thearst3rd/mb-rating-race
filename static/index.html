@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<title>Marble Blast Rating Race</title>
+		<title>2025 Solo Hunt Event</title>
 		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 	</head>
 	<style>
@@ -13,9 +13,9 @@
 	</style>
 	<body>
 		<div class="container my-5">
-			<h1>Marble Blast Rating Race</h1>
+			<h1>2025 Solo Hunt Event</h1>
 			<h3 id="fetching-text">You'll need javascript enabled for this! Sorry!!!</h3>
-			<p id="start-end-time-text"></p>
+			<!-- <p id="start-end-time-text"></p> -->
 			<p id="last-updated-text"></p>
 			<div class="form-check">
 				<input class="form-check-input" type="checkbox" value="" id="refresh-check" checked>
@@ -31,7 +31,7 @@
 	<script>
 		const scoreTable = document.getElementById("score-table");
 		const fetchingText = document.getElementById("fetching-text");
-		const startEndTimeText = document.getElementById("start-end-time-text");
+		//const startEndTimeText = document.getElementById("start-end-time-text");
 		const lastUpdatedText = document.getElementById("last-updated-text");
 		const refreshCheck = document.getElementById("refresh-check");
 		const debugText = document.getElementById("debug-text");
@@ -51,7 +51,7 @@
 			// Construct table header
 			scoreTable.insertRow().insertCell().outerHTML = "<th>Rank</th>";
 			scoreTable.insertRow().insertCell().outerHTML = "<th>Player</th>";
-			scoreTable.insertRow().insertCell().outerHTML = "<th>Total Rating</th>";
+			scoreTable.insertRow().insertCell().outerHTML = "<th>Total Score</th>";
 
 			let currentRow = 3; // After the first three header rows
 
@@ -126,7 +126,7 @@
 							const score = diff[missionId];
 							const cell = scoreTable.rows[missionRowMap[missionId]].insertCell();
 							if (score)
-								cell.innerText = formatRating(score.rating);
+								cell.innerText = formatRating(score.score);
 							else
 								cell.innerText = "-";
 						}
@@ -164,7 +164,7 @@
 				const startTime = new Date(json.startTime);
 				const endTime = new Date(json.endTime);
 
-				if (currentTime < startTime)
+				/*if (currentTime < startTime)
 					startEndTimeText.innerHTML = "Timing begins ";
 				else
 					startEndTimeText.innerHTML = "Timing began ";
@@ -176,7 +176,7 @@
 				startEndTimeText.innerHTML += `<b>${endTime}</b>.`;
 
 				if (json.exceptions.length > 0)
-					startEndTimeText.innerHTML += ' <a href="./exceptions/">(View Exceptions)</a>';
+					startEndTimeText.innerHTML += ' <a href="./exceptions/">(View Exceptions)</a>';*/
 
 				populateTable(json.scores);
 
