@@ -5,6 +5,7 @@
 
 import path from "path";
 import express from "express";
+import fs from "fs";
 const app = express();
 
 const PORT = 7800;
@@ -70,37 +71,29 @@ async function getMissions(): Promise<Record<string, Mission> | undefined> {
 	return missions;
 }
 
-function calcMissions(missionList: Array<number>): Record<string, Record<string, Array<Mission>>> {
+function calcMissions(missionList: Array<Array<number>>): Record<string, Record<string, Array<Mission>>> {
 	if (missionReference === undefined)
 		return {}
 
 	let missions: Record<string, Record<string, Array<Mission>>> = {}
-	let lastGame: string | undefined = undefined;
-	let lastDifficulty: string | undefined = undefined;
-	let currentGame: Record<string, Array<Mission>> | undefined = undefined;
+	let currentGame: Record<string, Array<Mission>> = {};
+	missions["Hunt"] = currentGame;
 	let currentDifficulty: Array<Mission> | undefined = undefined;
 
-	missionList.forEach(missionId => {
-		const mission = (missionReference as Record<number, Mission>)[missionId];
-		if (mission == null) {
-			console.log("wtf? Missing mission: " + missionId);
-			return;
-		}
-		if (currentGame === undefined || mission.game_name !== lastGame) {
-			lastDifficulty = undefined;
-			currentDifficulty = undefined;
-			lastGame = mission.game_name;
-			if (!(lastGame in missions))
-				missions[lastGame] = {};
-			currentGame = missions[lastGame];
-		}
-		if (currentDifficulty === undefined || mission.difficulty_name !== lastDifficulty) {
-			lastDifficulty = mission.difficulty_name;
-			if (!(lastDifficulty in currentGame))
-				currentGame[lastDifficulty] = [];
-			currentDifficulty = currentGame[lastDifficulty];
-		}
-		currentDifficulty.push(mission);
+	missionList.forEach((weekList, index) => {
+		currentDifficulty = [];
+		const difficultyName = `Week ${index + 1}`;
+		currentGame[difficultyName] = currentDifficulty;
+		weekList.forEach(missionId => {
+			const mission = (missionReference as Record<number, Mission>)[missionId];
+			if (mission == null) {
+				console.log("wtf? Missing mission: " + missionId);
+				return;
+			}
+			mission.game_name = "Hunt";
+			mission.difficulty_name = difficultyName;
+			currentDifficulty?.push(mission);
+		})
 	});
 	return missions;
 }
@@ -288,6 +281,19 @@ async function pollScores() {
 		}
 	}
 
+	let jsons = []
+
+	console.log("Loading previous scores...");
+	fs.readdirSync(".").filter(name => (name.startsWith("week") && name.endsWith(".json"))).forEach(name => {
+		const json = JSON.parse(fs.readFileSync(name).toString());
+		if (typeof(json) !== "object") {
+			console.error(`Unable to parse json file ${name}!!`);
+			return;
+		}
+		console.log(name);
+		jsons.push(json);
+	});
+
 	console.log("Fetching scores...");
 	const res = await fetch("https://marbleblast.com/pq/leader/api/Score/GetGlobalScoresRatingRace.php");
 	if (res.status !== 200) {
@@ -295,16 +301,22 @@ async function pollScores() {
 		currentlyPolling = false;
 		return;
 	}
-	const json = await res.json();
+	const latestJson = await res.json();
+
+	jsons.push(latestJson);
 
 	console.log("Extracting metadata");
-	startTime = new Date(json.startTime + "Z");
-	endTime = new Date(json.endTime + "Z");
-	exceptions = calcExceptions(json.exceptions);
+	startTime = new Date(latestJson.startTime + "Z");
+	endTime = new Date(latestJson.endTime + "Z");
+	exceptions = calcExceptions(latestJson.exceptions);
+
 	console.log("Building missions");
-	missions = calcMissions(json.missionList);
+	const allMissions = jsons.map(json => json.missionList);
+	missions = calcMissions(allMissions);
+
 	console.log("Calculating ratings");
-	scores = calcScores(json.scores);
+	const allScores = jsons.map(json => json.scores).flat();
+	scores = calcScores(allScores);
 
 	lastUpdated = new Date();
 	currentlyPolling = false;
