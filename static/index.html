@@ -69,7 +69,7 @@
 				difficultyTotalRowMap[gameName] = {}
 				const game = json[gameName];
 				// Do we have multiple difficulties in this game?
-				const multipleDifficulties = Object.keys(game).length > 1;
+				const multipleDifficulties = true; //Object.keys(game).length > 1;
 				for (const difficultyName in game) {
 					if (multipleDifficulties) {
 						scoreTable.insertRow().insertCell().outerHTML = `<th>${difficultyName}</th>`;
