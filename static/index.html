@@ -116,7 +116,7 @@
 
 				scoreTable.rows[0].insertCell().innerText = player.rank;
 				scoreTable.rows[1].insertCell().innerHTML = `<a href="./player/?player=${player.name}">${player.name}</a>`;
-				scoreTable.rows[2].insertCell().innerText = formatRating(player.totals.total);
+				scoreTable.rows[2].insertCell().innerHTML = `<b>${formatRating(player.totals.total)}</b>`;
 
 				for (const gameName in player.scores) {
 					const game = player.scores[gameName];
@@ -131,7 +131,7 @@
 								cell.innerText = "-";
 						}
 						if (difficultyName in difficultyTotalRowMap[gameName])
-							scoreTable.rows[difficultyTotalRowMap[gameName][difficultyName]].insertCell().innerText = formatRating(player.totals.games[gameName].difficulties[difficultyName]);
+							scoreTable.rows[difficultyTotalRowMap[gameName][difficultyName]].insertCell().innerHTML = `<b>${formatRating(player.totals.games[gameName].difficulties[difficultyName])}</b>`;
 					}
 					if (gameName in gameTotalRowMap)
 						scoreTable.rows[gameTotalRowMap[gameName]].insertCell().innerText = formatRating(player.totals.games[gameName].total);
