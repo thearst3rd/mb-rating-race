@@ -169,7 +169,8 @@
 
 				const currentTime = new Date();
 				const startTime = new Date(json.player.startTime ?? json.startTime);
-				const endTime = new Date(json.player.endTime ?? json.endTime);
+				let endTime = new Date(json.player.endTime ?? json.endTime);
+				endTime = new Date(endTime.getTime() - 1000); // Subtract 1 sec so it says 4:59:59 instead of 5:00:00 for example
 
 				if (json.player.startTime || json.player.endTime)
 					startEndTimeText.innerHTML = "<b>EXCEPTION: </b>"

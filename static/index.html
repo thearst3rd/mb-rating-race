@@ -162,7 +162,8 @@
 
 				const currentTime = new Date();
 				const startTime = new Date(json.startTime);
-				const endTime = new Date(json.endTime);
+				let endTime = new Date(json.endTime);
+				endTime = new Date(endTime.getTime() - 1000); // Subtract 1 sec so it says 4:59:59 instead of 5:00:00 for example
 
 				if (currentTime < startTime)
 					startEndTimeText.innerHTML = "Timing for week begins ";
