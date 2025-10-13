@@ -92,7 +92,7 @@
 			for (const gameName in json) {
 				if (multipleGames) {
 					const cell = scoreTable.insertRow().insertCell();
-					cell.outerHTML = `<th colspan="6">${gameName}</th>`;
+					cell.outerHTML = `<th colspan="10">${gameName}</th>`;
 					//cell.colSpan = 6;
 					gameRowMap[gameName] = currentRow;
 					currentRow++;
@@ -104,7 +104,7 @@
 				for (const difficultyName in game) {
 					if (multipleDifficulties) {
 						const cell = scoreTable.insertRow().insertCell();
-						cell.outerHTML = `<th colspan="6">${difficultyName}</th>`;
+						cell.outerHTML = `<th colspan="10">${difficultyName}</th>`;
 						//cell.colSpan = 6;
 						difficultyRowMap[gameName][difficultyName] = currentRow;
 						currentRow++;
@@ -145,7 +145,7 @@
 						} else {
 							const cell = row.insertCell();
 							cell.innerText = "-";
-							cell.colSpan = 5;
+							cell.colSpan = 9;
 						}
 					}
 				}
