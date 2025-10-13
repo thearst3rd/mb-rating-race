@@ -18,7 +18,7 @@
 			<h4 id="rank-text"></h4>
 			<h4 id="total-rating-text"></h4>
 			<h3 id="fetching-text">You'll need javascript enabled for this! Sorry!!!</h3>
-			<!-- <p id="start-end-time-text"></p> -->
+			<p id="start-end-time-text"></p>
 			<p id="last-updated-text"></p>
 			<div class="form-check">
 				<input class="form-check-input" type="checkbox" value="" id="refresh-check" checked>
@@ -37,7 +37,7 @@
 		const rankText = document.getElementById("rank-text");
 		const totalRatingText = document.getElementById("total-rating-text");
 		const fetchingText = document.getElementById("fetching-text");
-		//const startEndTimeText = document.getElementById("start-end-time-text");
+		const startEndTimeText = document.getElementById("start-end-time-text");
 		const lastUpdatedText = document.getElementById("last-updated-text");
 		const refreshCheck = document.getElementById("refresh-check");
 		const debugText = document.getElementById("debug-text");
@@ -171,19 +171,19 @@
 				const startTime = new Date(json.player.startTime ?? json.startTime);
 				const endTime = new Date(json.player.endTime ?? json.endTime);
 
-				/*if (json.player.startTime || json.player.endTime)
+				if (json.player.startTime || json.player.endTime)
 					startEndTimeText.innerHTML = "<b>EXCEPTION: </b>"
 
 				if (currentTime < startTime)
-					startEndTimeText.innerHTML += "Timing begins ";
+					startEndTimeText.innerHTML += "Timing for week begins ";
 				else
-					startEndTimeText.innerHTML += "Timing began ";
+					startEndTimeText.innerHTML += "Timing for week began ";
 				startEndTimeText.innerHTML += `<b>${startTime}</b>`;
 				if (currentTime < endTime)
 					startEndTimeText.innerHTML += " and ends ";
 				else
 					startEndTimeText.innerHTML += " and ended ";
-				startEndTimeText.innerHTML += `<b>${endTime}</b>.`;*/
+				startEndTimeText.innerHTML += `<b>${endTime}</b>.`;
 
 				populateTable(json.player);
 

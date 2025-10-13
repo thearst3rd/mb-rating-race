@@ -15,7 +15,7 @@
 		<div class="container my-5">
 			<h1>2025 Solo Hunt Event</h1>
 			<h3 id="fetching-text">You'll need javascript enabled for this! Sorry!!!</h3>
-			<!-- <p id="start-end-time-text"></p> -->
+			<p id="start-end-time-text"></p>
 			<p id="last-updated-text"></p>
 			<div class="form-check">
 				<input class="form-check-input" type="checkbox" value="" id="refresh-check" checked>
@@ -31,7 +31,7 @@
 	<script>
 		const scoreTable = document.getElementById("score-table");
 		const fetchingText = document.getElementById("fetching-text");
-		//const startEndTimeText = document.getElementById("start-end-time-text");
+		const startEndTimeText = document.getElementById("start-end-time-text");
 		const lastUpdatedText = document.getElementById("last-updated-text");
 		const refreshCheck = document.getElementById("refresh-check");
 		const debugText = document.getElementById("debug-text");
@@ -164,10 +164,10 @@
 				const startTime = new Date(json.startTime);
 				const endTime = new Date(json.endTime);
 
-				/*if (currentTime < startTime)
-					startEndTimeText.innerHTML = "Timing begins ";
+				if (currentTime < startTime)
+					startEndTimeText.innerHTML = "Timing for week begins ";
 				else
-					startEndTimeText.innerHTML = "Timing began ";
+					startEndTimeText.innerHTML = "Timing for week began ";
 				startEndTimeText.innerHTML += `<b>${startTime}</b>`;
 				if (currentTime < endTime)
 					startEndTimeText.innerHTML += " and ends ";
@@ -176,7 +176,7 @@
 				startEndTimeText.innerHTML += `<b>${endTime}</b>.`;
 
 				if (json.exceptions.length > 0)
-					startEndTimeText.innerHTML += ' <a href="./exceptions/">(View Exceptions)</a>';*/
+					startEndTimeText.innerHTML += ' <a href="./exceptions/">(View Exceptions)</a>';
 
 				populateTable(json.scores);
 
