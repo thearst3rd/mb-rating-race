@@ -40,6 +40,11 @@ interface Score {
 	score_type: "time" | "score";
 	total_bonus: number;
 	rating: number;
+	gem_count: number;
+	gems_1_point: number;
+	gems_2_point: number;
+	gems_5_point: number;
+	gems_10_point: number;
 	timestamp: Date;
 }
 
