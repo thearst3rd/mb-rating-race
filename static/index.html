@@ -48,6 +48,7 @@
 		let missionRowMap = {}; // {missionId: idx}
 
 		function createTable(json) {
+			scoreTable.innerHTML = "";
 			// Construct table header
 			scoreTable.insertRow().insertCell().outerHTML = "<th>Rank</th>";
 			scoreTable.insertRow().insertCell().outerHTML = "<th>Player</th>";
@@ -207,7 +208,7 @@
 				const json = await res.json(); // "json" but it is actually a string
 				const date = new Date(json);
 				if (lastUpdated === undefined || date > lastUpdated) {
-					location.reload();
+					loadData();
 				}
 			} catch (ex) {
 				console.error(ex);

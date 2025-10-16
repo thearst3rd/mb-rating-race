@@ -67,6 +67,7 @@
 		}
 
 		function createTable(json) {
+			scoreTable.innerHTML = "";
 			// Construct table header
 			{
 				const header = scoreTable.insertRow();
@@ -183,7 +184,9 @@
 				endTime = new Date(endTime.getTime() - 1000); // Subtract 1 sec so it says 4:59:59 instead of 5:00:00 for example
 
 				if (json.player.startTime || json.player.endTime)
-					startEndTimeText.innerHTML = "<b>EXCEPTION: </b>"
+					startEndTimeText.innerHTML = "<b>EXCEPTION: </b>";
+				else
+					startEndTimeText.innerHTML = "";
 
 				if (currentTime < startTime)
 					startEndTimeText.innerHTML += "Timing for week begins ";
@@ -224,7 +227,7 @@
 				const json = await res.json(); // "json" but it is actually a string
 				const date = new Date(json);
 				if (lastUpdated === undefined || date > lastUpdated) {
-					location.reload();
+					loadData();
 				}
 			} catch (ex) {
 				console.error(ex);
