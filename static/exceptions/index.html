@@ -40,6 +40,7 @@
 		fetchingText.innerText = "Fetching exceptions...";
 
 		let lastUpdated = undefined;
+		let latestPB = undefined;
 		let pollInterval = undefined;
 		let currentlyPolling = true;
 
@@ -75,8 +76,9 @@
 					currentlyPolling = false;
 					return;
 				}
-				let json = await res.json(); // "json" but it is actually a string
-				lastUpdated = new Date(json);
+				let json = await res.json();
+				lastUpdated = new Date(json.lastUpdated);
+				latestPB = new Date(json.latestPB);
 
 				lastUpdatedText.innerText = `Last updated: ${lastUpdated}`;
 
@@ -133,10 +135,16 @@
 					currentlyPolling = false;
 					return;
 				}
-				const json = await res.json(); // "json" but it is actually a string
-				const date = new Date(json);
-				if (lastUpdated === undefined || date > lastUpdated) {
-					location.reload();
+				const json = await res.json();
+				const newLastUpdated = new Date(json.lastUpdated);
+				const newLatestPB = new Date(json.latestPB);
+				if (lastUpdated === undefined || newLastUpdated > lastUpdated) {
+					if (newLatestPB > latestPB) {
+						loadData();
+					} else {
+						lastUpdated = newLastUpdated;
+						lastUpdatedText.innerText = `Last updated: ${lastUpdated}`;
+					}
 				}
 			} catch (ex) {
 				console.error(ex);

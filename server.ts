@@ -109,6 +109,7 @@ function calcMissions(missionList: Array<Array<number>>): Record<string, Record<
  */
 
 let lastUpdated = new Date("1970-01-01T00:00:00Z");
+let latestPB = new Date("1970-01-01T00:00:00Z");
 
 let missions: Record<string, Record<string, Array<Mission>>>; // {game_name: {difficulty_name: [mission]}}
 let scores: Array<Player>;
@@ -189,6 +190,8 @@ function calcScores(scores: Array<Score>): Array<Player> {
 		if (prevScore === null || sortScore(score, prevScore) < 0) {
 			score.timestamp = new Date(score.timestamp + "Z");
 			player.scores[mission.game_name][mission.difficulty_name][mission.id] = score;
+			if (score.timestamp > latestPB)
+				latestPB = score.timestamp;
 		}
 	}
 	// Sum up best scores for each player
@@ -348,7 +351,10 @@ app.get("/missions", (req, res) => {
 });
 
 app.get("/lastupdated", (req, res) => {
-	res.send(lastUpdated);
+	res.json({
+		lastUpdated: lastUpdated,
+		latestPB: latestPB,
+	});
 })
 
 app.get("/meta", (req, res) => {
