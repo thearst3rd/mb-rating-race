@@ -29,6 +29,8 @@ interface Player {
 	scores: Record<string, Record<string, Record<number, Score | null>>>;
 	totals: {total: number, games: Record<string, {total: number, difficulties: Record<string, number>}>};
 	rank: number;
+	latestPB: Date;
+	latestRun: Date;
 }
 
 interface Score {
@@ -116,6 +118,8 @@ let scores: Array<Player>;
 let startTime: Date;
 let endTime: Date;
 let exceptions: Array<{user: string, startTime: Date, endTime: Date}>;
+let playerAllScores: Record<string, Array<Score>>; // {player_name: [scores]}
+let missionTopScores: Record<number, Array<Score>>; // {mission_id: [scores]}
 
 function createPlayer(username: string, name: string): Player {
 	const player: Player = {
@@ -126,6 +130,8 @@ function createPlayer(username: string, name: string): Player {
 		scores: {},
 		totals: {total: 0, games: {}},
 		rank: -1,
+		latestPB: new Date("1970-01-01T00:00:00Z"),
+		latestRun: new Date("1970-01-01T00:00:00Z"),
 	};
 	const ex = exceptions.filter(ex => (ex.user === name))[0];
 	if (ex) {
@@ -176,11 +182,11 @@ function sortScore(a: Score, b: Score): number {
 	}
 }
 
-function calcScores(scores: Array<Score>): Array<Player> {
+function calcScores(allScores: Array<Score>): void {
 	const players: Record<string, Player> = {};
 	// Figure out each player's best score for each level
 	console.log("Adding scores");
-	for (const score of scores) {
+	for (const score of allScores) {
 		if (!(score.name in players)) {
 			players[score.name] = createPlayer(score.username, score.name);
 		}
@@ -192,10 +198,13 @@ function calcScores(scores: Array<Score>): Array<Player> {
 			player.scores[mission.game_name][mission.difficulty_name][mission.id] = score;
 			if (score.timestamp > latestPB)
 				latestPB = score.timestamp;
+			if (score.timestamp > player.latestPB)
+				player.latestPB = score.timestamp;
 		}
 	}
 	// Sum up best scores for each player
 	console.log("Summing totals");
+	missionTopScores = {};
 	for (const playerName in players) {
 		const player = players[playerName];
 		for (const gameName in player.scores) {
@@ -216,26 +225,24 @@ function calcScores(scores: Array<Score>): Array<Player> {
 	}
 	// Sort ratings by who has the most
 	console.log("Sorting results");
-	const result: Array<Player> = [];
+	scores = [];
 	for (const playerName in players) {
-		result.push(players[playerName]);
+		scores.push(players[playerName]);
 	}
-	result.sort((p1, p2) => {
+	scores.sort((p1, p2) => {
 		return p2.totals.total - p1.totals.total;
 	})
 	// Assign ranks
 	let lastRating = Infinity;
 	let lastRank = 0;
-	for (let i = 0; i < result.length; i++) {
-		const player = result[i];
+	for (let i = 0; i < scores.length; i++) {
+		const player = scores[i];
 		if (player.totals.total < lastRating) {
 			lastRank = i + 1;
 			lastRating = player.totals.total;
 		}
 		player.rank = lastRank;
 	}
-
-	return result;
 }
 
 let currentlyPolling = false;
@@ -324,7 +331,7 @@ async function pollScores() {
 
 	console.log("Calculating ratings");
 	const allScores = jsons.map(json => json.scores).flat();
-	scores = calcScores(allScores);
+	calcScores(allScores);
 
 	lastUpdated = new Date();
 	currentlyPolling = false;
@@ -355,6 +362,30 @@ app.get("/lastupdated", (req, res) => {
 		lastUpdated: lastUpdated,
 		latestPB: latestPB,
 	});
+})
+
+app.get("/lastupdated/:player", (req, res) => {
+	if (!scores) {
+		res.status(500);
+		res.json({error: "Please wait lmao"});
+		return;
+	}
+	if (!("player" in req.params)) {
+		res.status(400);
+		res.json({error: "What player lmao"});
+		return;
+	}
+	for (const player of scores) {
+		if (player.name === req.params.player) {
+			res.json({
+				lastUpdated: lastUpdated,
+				latestPB: player.latestPB,
+			});
+			return;
+		}
+	}
+	res.status(404);
+	res.json({error: "Player not found"});
 })
 
 app.get("/meta", (req, res) => {
@@ -391,6 +422,31 @@ app.get("/playerscores/:player", (req, res) => {
 		return;
 	}
 	for (const player of scores) {
+		if (player.name === req.params.player) {
+			res.json({
+				startTime: startTime,
+				endTime: endTime,
+				player: player,
+			});
+			return;
+		}
+	}
+	res.status(404);
+	res.json({error: "Player not found"});
+})
+
+app.get("/missionscores/:mission", (req, res) => {
+	if (!missionTopScores) {
+		res.status(500);
+		res.json({error: "Please wait lmao"});
+		return;
+	}
+	if (!("mission" in req.params)) {
+		res.status(400);
+		res.json({error: "What player lmao"});
+		return;
+	}
+	for (const mission of missionTopScores) {
 		if (player.name === req.params.player) {
 			res.json({
 				startTime: startTime,

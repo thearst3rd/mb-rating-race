@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>2025 Solo Hunt Event Mission Breakdown</title>
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+	</head>
+	<style>
+		td, th {
+			text-align: center;
+		}
+	</style>
+	<body>
+		<div class="container my-5">
+			<a href=".."><h1>2025 Solo Hunt Event</h1></a>
+			<h2 id="mission-breakdown-text"></h2>
+			<h3 id="fetching-text">You'll need javascript enabled for this! Sorry!!!</h3>
+			<p id="start-end-time-text"></p>
+			<p id="last-updated-text"></p>
+			<div class="form-check">
+				<input class="form-check-input" type="checkbox" value="" id="refresh-check" checked>
+				<label class="form-check-label" for="refresh-check">
+					Automatically refresh
+				</label>
+			</div>
+		</div>
+		<p id="debug-text"></p>
+		<table class="table table-bordered table-striped table-sm" id="score-table"></table>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+	</body>
+	<script>
+		const scoreTable = document.getElementById("score-table");
+		const missionBreakdownText = document.getElementById("mission-breakdown-text");
+		const fetchingText = document.getElementById("fetching-text");
+		const startEndTimeText = document.getElementById("start-end-time-text");
+		const lastUpdatedText = document.getElementById("last-updated-text");
+		const refreshCheck = document.getElementById("refresh-check");
+		const debugText = document.getElementById("debug-text");
+		fetchingText.innerText = "Fetching missions...";
+
+		const usp = new URLSearchParams(window.location.search);
+		const playerName = usp.get("player");
+		if (!playerName) {
+			console.error("You must supply a player name!");
+			fetchingText.innerText = "No player provided!";
+		}
+
+		let lastUpdated = undefined;
+		let latestPB = undefined;
+		let pollInterval = undefined;
+		let currentlyPolling = true;
+
+		let gameRowMap = {}; // {gameName: idx}
+		let difficultyRowMap = {}; // {gameName: {difficultyName: idx}}
+		let missionRowMap = {}; // {missionId: idx}
+
+		function formatTime(timeInMs) {
+			const ms = timeInMs % 1000;
+			const sec = Math.floor(timeInMs / 1000) % 60;
+			const min = Math.floor(timeInMs / 60000);
+
+			return `${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}.${String(ms).padStart(3, "0")}`;
+		}
+
+		function createTable(json) {
+			scoreTable.innerHTML = "";
+			// Construct table header
+			{
+				const header = scoreTable.insertRow();
+				header.insertCell().outerHTML = "<th>Level</th>";
+				header.insertCell().outerHTML = "<th>Score ID</th>";
+				header.insertCell().outerHTML = "<th>Score</th>";
+				header.insertCell().outerHTML = "<th>Total Bonus</th>";
+				//header.insertCell().outerHTML = "<th>Rating</th>";
+				header.insertCell().outerHTML = "<th>Timestamp</th>";
+			}
+
+			let currentRow = 1; // After the first header row
+
+			// Do we have multiple games involved?
+			const multipleGames = Object.keys(json).length > 1;
+
+			// Construct the levels
+			for (const gameName in json) {
+				if (multipleGames) {
+					const cell = scoreTable.insertRow().insertCell();
+					cell.outerHTML = `<th colspan="6">${gameName}</th>`;
+					//cell.colSpan = 6;
+					gameRowMap[gameName] = currentRow;
+					currentRow++;
+				}
+				difficultyRowMap[gameName] = {}
+				const game = json[gameName];
+				// Do we have multiple difficulties in this game?
+				const multipleDifficulties = true; //Object.keys(game).length > 1;
+				for (const difficultyName in game) {
+					if (multipleDifficulties) {
+						const cell = scoreTable.insertRow().insertCell();
+						cell.outerHTML = `<th colspan="6">${difficultyName}</th>`;
+						//cell.colSpan = 6;
+						difficultyRowMap[gameName][difficultyName] = currentRow;
+						currentRow++;
+					}
+					const diff = game[difficultyName];
+					for (const mission of diff) {
+						scoreTable.insertRow().insertCell().outerHTML = `<th>${mission.name}</th>`;
+						missionRowMap[mission.id] = currentRow;
+						currentRow++;
+					}
+				}
+			}
+		}
+
+		function formatRating(rating) {
+			return rating.toLocaleString("en-US");
+		}
+
+		function populateTable(player) {
+			for (const gameName in player.scores) {
+				const game = player.scores[gameName];
+				for (const difficultyName in game) {
+					const diff = game[difficultyName];
+					for (const missionId in diff) {
+						const score = diff[missionId];
+						const row = scoreTable.rows[missionRowMap[missionId]];
+						if (score) {
+							row.insertCell().innerText = score.id;
+							row.insertCell().innerText = score.score_type === "time" ? formatTime(score.score) : score.score;
+							row.insertCell().innerText = formatTime(Math.abs(score.total_bonus));
+							//row.insertCell().innerText = formatRating(score.rating);
+							row.insertCell().innerText = new Date(score.timestamp);
+						} else {
+							const cell = row.insertCell();
+							cell.innerText = "-";
+							cell.colSpan = 5;
+						}
+					}
+				}
+			}
+		}
+
+		async function loadData() {
+			try {
+				let res = await fetch("../lastupdated");
+				if (res.status != 200) {
+					console.error("Couldn't fetch last updated...");
+					currentlyPolling = false;
+					return;
+				}
+				let json = await res.json();
+				lastUpdated = new Date(json.lastUpdated);
+				latestPB = new Date(json.latestPB);
+
+				lastUpdatedText.innerText = `Last updated: ${lastUpdated}`;
+
+				res = await fetch("../missions");
+				json = await res.json();
+
+				createTable(json);
+
+				res = await fetch(`../playerscores/${playerName}`);
+				json = await res.json();
+
+				playerBreakdownText.innerHTML = `Mission Breakdown: <b>${playerName}</b>`;
+				rankText.innerText = `Rank: ${json.player.rank}`;
+				totalRatingText.innerText = `Total Score: ${formatRating(json.player.totals.total)}`;
+
+				const currentTime = new Date();
+				const startTime = new Date(json.player.startTime ?? json.startTime);
+				let endTime = new Date(json.player.endTime ?? json.endTime);
+				endTime = new Date(endTime.getTime() - 1000); // Subtract 1 sec so it says 4:59:59 instead of 5:00:00 for example
+
+				if (json.player.startTime || json.player.endTime)
+					startEndTimeText.innerHTML = "<b>EXCEPTION: </b>";
+				else
+					startEndTimeText.innerHTML = "";
+
+				if (currentTime < startTime)
+					startEndTimeText.innerHTML += "Timing for week begins ";
+				else
+					startEndTimeText.innerHTML += "Timing for week began ";
+				startEndTimeText.innerHTML += `<b>${startTime}</b>`;
+				if (currentTime < endTime)
+					startEndTimeText.innerHTML += " and ends ";
+				else
+					startEndTimeText.innerHTML += " and ended ";
+				startEndTimeText.innerHTML += `<b>${endTime}</b>.`;
+
+				populateTable(json.player);
+
+				fetchingText.innerText = "";
+			} catch (ex) {
+				console.error(ex);
+			}
+			currentlyPolling = false;
+		}
+
+		async function poll() {
+			try {
+				if (!refreshCheck.checked) {
+					return;
+				}
+				if (currentlyPolling) {
+					console.warn("Already polling!!");
+					return;
+				}
+				currentlyPolling = true;
+				const res = await fetch("../lastupdated");
+				if (res.status != 200) {
+					console.error("Couldn't fetch last updated...");
+					currentlyPolling = false;
+					return;
+				}
+				const json = await res.json();
+				const newLastUpdated = new Date(json.lastUpdated);
+				const newLatestPB = new Date(json.latestPB);
+				if (lastUpdated === undefined || newLastUpdated > lastUpdated) {
+					if (newLatestPB > latestPB) {
+						loadData();
+					} else {
+						lastUpdated = newLastUpdated;
+						lastUpdatedText.innerText = `Last updated: ${lastUpdated}`;
+					}
+				}
+			} catch (ex) {
+				console.error(ex);
+			}
+			currentlyPolling = false;
+		}
+
+		if (playerName) {
+			loadData();
+			pollInterval = setInterval(poll, 3 * 1000);
+		}
+	</script>
+</html>
