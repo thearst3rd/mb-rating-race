@@ -10,6 +10,7 @@ const app = express();
 
 const PORT = 7800;
 const POLL_INTERVAL = 15 * 1000; // milliseconds
+const NO_MB_COM = false; // If true, don't pull from marbleblast.com
 
 interface Mission {
 	id: number;
@@ -304,7 +305,7 @@ async function pollScores() {
 		}
 	}
 
-	let jsons = []
+	let jsons: any[] = [];
 
 	console.log("Loading previous scores...");
 	fs.readdirSync(".").filter(name => (name.startsWith("week") && name.endsWith(".json"))).forEach(name => {
@@ -317,16 +318,21 @@ async function pollScores() {
 		jsons.push(json);
 	});
 
-	console.log("Fetching scores...");
-	const res = await fetch("https://marbleblast.com/pq/leader/api/Score/GetGlobalScoresRatingRace.php");
-	if (res.status !== 200) {
-		console.error("Failed to get scores!!");
-		currentlyPolling = false;
-		return;
-	}
-	const latestJson = await res.json();
+	let latestJson: any;
+	if (NO_MB_COM) {
+		latestJson = jsons[jsons.length - 1];
+	} else {
+		console.log("Fetching scores...");
+		const res = await fetch("https://marbleblast.com/pq/leader/api/Score/GetGlobalScoresRatingRace.php");
+		if (res.status !== 200) {
+			console.error("Failed to get scores!!");
+			currentlyPolling = false;
+			return;
+		}
+		latestJson = await res.json();
 
-	jsons.push(latestJson);
+		jsons.push(latestJson);
+	}
 
 	console.log("Extracting metadata");
 	startTime = new Date(latestJson.startTime + "Z");
