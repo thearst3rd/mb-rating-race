@@ -64,6 +64,7 @@
 			// Construct table header
 			{
 				const header = scoreTable.insertRow();
+				header.insertCell().outerHTML = "<th>Rank</th>";
 				header.insertCell().outerHTML = "<th>Player</th>";
 				header.insertCell().outerHTML = "<th>Score ID</th>";
 				header.insertCell().outerHTML = "<th>Score</th>";
@@ -77,9 +78,18 @@
 				header.insertCell().outerHTML = "<th>Timestamp</th>";
 			}
 
-			for (const score of scores) {
+			let lastRank = 1;
+
+			for (let i = 0; i < scores.length; i++) {
+				const score = scores[i];
+				if (i != 0) {
+					lastScore = scores[i-1];
+					if (lastScore.score !== score.score || lastScore.score_type !== score.score_type)
+						lastRank = i + 1;
+				}
 				const row = scoreTable.insertRow();
-				row.insertCell().outerHTML = `<th>${score.name}</th>`;
+				row.insertCell().innerText = lastRank;
+				row.insertCell().innerHTML = `<b>${score.name}</b>`;
 				row.insertCell().innerText = score.id;
 				row.insertCell().innerText = score.score_type === "time" ? formatTime(score.score) : score.score;
 				row.insertCell().innerText = formatTime(Math.abs(score.total_bonus));
@@ -95,35 +105,6 @@
 
 		function formatRating(rating) {
 			return rating.toLocaleString("en-US");
-		}
-
-		function populateTable(player) {
-			for (const gameName in player.scores) {
-				const game = player.scores[gameName];
-				for (const difficultyName in game) {
-					const diff = game[difficultyName];
-					for (const missionId in diff) {
-						const score = diff[missionId];
-						const row = scoreTable.rows[missionRowMap[missionId]];
-						if (score) {
-							row.insertCell().innerText = score.id;
-							row.insertCell().innerText = score.score_type === "time" ? formatTime(score.score) : score.score;
-							row.insertCell().innerText = formatTime(Math.abs(score.total_bonus));
-							//row.insertCell().innerText = formatRating(score.rating);
-							row.insertCell().innerText = score.gem_count;
-							row.insertCell().innerText = score.gems_1_point;
-							row.insertCell().innerText = score.gems_2_point;
-							row.insertCell().innerText = score.gems_5_point;
-							row.insertCell().innerText = score.gems_10_point;
-							row.insertCell().innerText = new Date(score.timestamp);
-						} else {
-							const cell = row.insertCell();
-							cell.innerText = "-";
-							cell.colSpan = 9;
-						}
-					}
-				}
-			}
 		}
 
 		async function loadData() {
