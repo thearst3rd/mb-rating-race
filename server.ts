@@ -218,10 +218,18 @@ function calcScores(allScores: Array<Score>): void {
 						player.totals.total += score.score;
 						gameTotal.total += score.score;
 						gameTotal.difficulties[difficultyName] += score.score;
+						if (!(missionId in missionTopScores)) {
+							missionTopScores[missionId] = [];
+						}
+						missionTopScores[missionId].push(score);
 					}
 				}
 			}
 		}
+	}
+	// Sort mission top scores
+	for (const [missionId, scores] of Object.entries(missionTopScores)) {
+		scores.sort(sortScore);
 	}
 	// Sort ratings by who has the most
 	console.log("Sorting results");
@@ -436,7 +444,7 @@ app.get("/playerscores/:player", (req, res) => {
 })
 
 app.get("/missionscores/:mission", (req, res) => {
-	if (!missionTopScores) {
+	if (!missionTopScores || !missionReference) {
 		res.status(500);
 		res.json({error: "Please wait lmao"});
 		return;
@@ -446,12 +454,11 @@ app.get("/missionscores/:mission", (req, res) => {
 		res.json({error: "What player lmao"});
 		return;
 	}
-	for (const mission of missionTopScores) {
-		if (player.name === req.params.player) {
+	for (const [missionId, scores] of Object.entries(missionTopScores)) {
+		if (missionId == req.params.mission) {
 			res.json({
-				startTime: startTime,
-				endTime: endTime,
-				player: player,
+				mission: missionReference[Number(missionId)],
+				scores: scores,
 			});
 			return;
 		}

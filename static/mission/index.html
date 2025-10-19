@@ -40,20 +40,16 @@
 		fetchingText.innerText = "Fetching missions...";
 
 		const usp = new URLSearchParams(window.location.search);
-		const playerName = usp.get("player");
-		if (!playerName) {
-			console.error("You must supply a player name!");
-			fetchingText.innerText = "No player provided!";
+		const missionId = usp.get("missionId");
+		if (!missionId) {
+			console.error("You must supply a missionId!");
+			fetchingText.innerText = "No mission ID provided!";
 		}
 
 		let lastUpdated = undefined;
 		let latestPB = undefined;
 		let pollInterval = undefined;
 		let currentlyPolling = true;
-
-		let gameRowMap = {}; // {gameName: idx}
-		let difficultyRowMap = {}; // {gameName: {difficultyName: idx}}
-		let missionRowMap = {}; // {missionId: idx}
 
 		function formatTime(timeInMs) {
 			const ms = timeInMs % 1000;
@@ -63,52 +59,37 @@
 			return `${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}.${String(ms).padStart(3, "0")}`;
 		}
 
-		function createTable(json) {
+		function createAndPopulateTable(scores) {
 			scoreTable.innerHTML = "";
 			// Construct table header
 			{
 				const header = scoreTable.insertRow();
-				header.insertCell().outerHTML = "<th>Level</th>";
+				header.insertCell().outerHTML = "<th>Player</th>";
 				header.insertCell().outerHTML = "<th>Score ID</th>";
 				header.insertCell().outerHTML = "<th>Score</th>";
 				header.insertCell().outerHTML = "<th>Total Bonus</th>";
 				//header.insertCell().outerHTML = "<th>Rating</th>";
+				header.insertCell().outerHTML = "<th>Gem Count</th>";
+				header.insertCell().outerHTML = "<th>Reds</th>";
+				header.insertCell().outerHTML = "<th>Yellows</th>";
+				header.insertCell().outerHTML = "<th>Blues</th>";
+				header.insertCell().outerHTML = "<th>Platinums</th>";
 				header.insertCell().outerHTML = "<th>Timestamp</th>";
 			}
 
-			let currentRow = 1; // After the first header row
-
-			// Do we have multiple games involved?
-			const multipleGames = Object.keys(json).length > 1;
-
-			// Construct the levels
-			for (const gameName in json) {
-				if (multipleGames) {
-					const cell = scoreTable.insertRow().insertCell();
-					cell.outerHTML = `<th colspan="6">${gameName}</th>`;
-					//cell.colSpan = 6;
-					gameRowMap[gameName] = currentRow;
-					currentRow++;
-				}
-				difficultyRowMap[gameName] = {}
-				const game = json[gameName];
-				// Do we have multiple difficulties in this game?
-				const multipleDifficulties = true; //Object.keys(game).length > 1;
-				for (const difficultyName in game) {
-					if (multipleDifficulties) {
-						const cell = scoreTable.insertRow().insertCell();
-						cell.outerHTML = `<th colspan="6">${difficultyName}</th>`;
-						//cell.colSpan = 6;
-						difficultyRowMap[gameName][difficultyName] = currentRow;
-						currentRow++;
-					}
-					const diff = game[difficultyName];
-					for (const mission of diff) {
-						scoreTable.insertRow().insertCell().outerHTML = `<th>${mission.name}</th>`;
-						missionRowMap[mission.id] = currentRow;
-						currentRow++;
-					}
-				}
+			for (const score of scores) {
+				const row = scoreTable.insertRow();
+				row.insertCell().outerHTML = `<th>${score.name}</th>`;
+				row.insertCell().innerText = score.id;
+				row.insertCell().innerText = score.score_type === "time" ? formatTime(score.score) : score.score;
+				row.insertCell().innerText = formatTime(Math.abs(score.total_bonus));
+				//row.insertCell().innerText = formatRating(score.rating);
+				row.insertCell().innerText = score.gem_count;
+				row.insertCell().innerText = score.gems_1_point;
+				row.insertCell().innerText = score.gems_2_point;
+				row.insertCell().innerText = score.gems_5_point;
+				row.insertCell().innerText = score.gems_10_point;
+				row.insertCell().innerText = new Date(score.timestamp);
 			}
 		}
 
@@ -129,11 +110,16 @@
 							row.insertCell().innerText = score.score_type === "time" ? formatTime(score.score) : score.score;
 							row.insertCell().innerText = formatTime(Math.abs(score.total_bonus));
 							//row.insertCell().innerText = formatRating(score.rating);
+							row.insertCell().innerText = score.gem_count;
+							row.insertCell().innerText = score.gems_1_point;
+							row.insertCell().innerText = score.gems_2_point;
+							row.insertCell().innerText = score.gems_5_point;
+							row.insertCell().innerText = score.gems_10_point;
 							row.insertCell().innerText = new Date(score.timestamp);
 						} else {
 							const cell = row.insertCell();
 							cell.innerText = "-";
-							cell.colSpan = 5;
+							cell.colSpan = 9;
 						}
 					}
 				}
@@ -154,19 +140,12 @@
 
 				lastUpdatedText.innerText = `Last updated: ${lastUpdated}`;
 
-				res = await fetch("../missions");
+				res = await fetch(`../missionscores/${missionId}`);
 				json = await res.json();
 
-				createTable(json);
+				missionBreakdownText.innerHTML = `Mission Breakdown: <b>${json.mission.name}</b>`;
 
-				res = await fetch(`../playerscores/${playerName}`);
-				json = await res.json();
-
-				playerBreakdownText.innerHTML = `Mission Breakdown: <b>${playerName}</b>`;
-				rankText.innerText = `Rank: ${json.player.rank}`;
-				totalRatingText.innerText = `Total Score: ${formatRating(json.player.totals.total)}`;
-
-				const currentTime = new Date();
+				/*const currentTime = new Date();
 				const startTime = new Date(json.player.startTime ?? json.startTime);
 				let endTime = new Date(json.player.endTime ?? json.endTime);
 				endTime = new Date(endTime.getTime() - 1000); // Subtract 1 sec so it says 4:59:59 instead of 5:00:00 for example
@@ -185,9 +164,9 @@
 					startEndTimeText.innerHTML += " and ends ";
 				else
 					startEndTimeText.innerHTML += " and ended ";
-				startEndTimeText.innerHTML += `<b>${endTime}</b>.`;
+				startEndTimeText.innerHTML += `<b>${endTime}</b>.`;*/
 
-				populateTable(json.player);
+				createAndPopulateTable(json.scores);
 
 				fetchingText.innerText = "";
 			} catch (ex) {
@@ -229,7 +208,7 @@
 			currentlyPolling = false;
 		}
 
-		if (playerName) {
+		if (missionId) {
 			loadData();
 			pollInterval = setInterval(poll, 3 * 1000);
 		}
