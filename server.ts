@@ -60,11 +60,19 @@ let missionReference: Record<number, Mission> | undefined = undefined;
 
 async function getMissions(): Promise<Record<string, Mission> | undefined> {
 	let missions: Record<string, Mission> = {}
-	const res = await fetch("https://marbleblast.com/pq/leader/api/Mission/GetMissionList.php?gameType=MultiPlayer");
-	if (res.status !== 200)
-		return undefined;
-
-	const json = await res.json();
+	let json;
+	if (NO_MB_COM) {
+		json = JSON.parse(fs.readFileSync("missions.json").toString());
+		if (json === null || typeof(json) !== "object") {
+			console.error(`Unable to parse json file missions.json!!`);
+			return undefined;
+		}
+	} else {
+		const res = await fetch("https://marbleblast.com/pq/leader/api/Mission/GetMissionList.php?gameType=MultiPlayer");
+		if (res.status !== 200)
+			return undefined;
+		json = await res.json();
+	}
 
 	json.games.forEach((game: any) => {
 		game.difficulties.forEach((diff: any) => {
@@ -310,7 +318,7 @@ async function pollScores() {
 	console.log("Loading previous scores...");
 	fs.readdirSync(".").filter(name => (name.startsWith("week") && name.endsWith(".json"))).forEach(name => {
 		const json = JSON.parse(fs.readFileSync(name).toString());
-		if (typeof(json) !== "object") {
+		if (json === null || typeof(json) !== "object") {
 			console.error(`Unable to parse json file ${name}!!`);
 			return;
 		}
