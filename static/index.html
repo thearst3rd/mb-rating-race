@@ -81,7 +81,7 @@
 					}
 					const diff = game[difficultyName];
 					for (const mission of diff) {
-						scoreTable.insertRow().insertCell().outerHTML = `<th><a href="./mission?missionId=${mission.id}">${mission.name}</a></th>`;
+						scoreTable.insertRow().insertCell().outerHTML = `<th><a href="./mission/?missionId=${mission.id}">${mission.name}</a></th>`;
 						missionRowMap[mission.id] = currentRow;
 						currentRow++;
 					}
