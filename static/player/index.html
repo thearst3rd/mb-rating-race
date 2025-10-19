@@ -169,13 +169,23 @@
 
 				lastUpdatedText.innerText = `Last updated: ${lastUpdated}`;
 
+				res = await fetch(`../playerscores/${playerId}`);
+				const scoreJson = await res.json();
+				if (res.status != 200) {
+					console.error("Error!");
+					if (scoreJson !== null)
+						console.log(scoreJson);
+					fetchingText.innerText = `Could not fetch scores for player ID ${playerId}!`;
+					currentlyPolling = false;
+					return;
+				}
+
 				res = await fetch("../missions");
 				json = await res.json();
 
 				createTable(json);
-
-				res = await fetch(`../playerscores/${playerId}`);
-				json = await res.json();
+			
+				json = scoreJson;
 
 				playerBreakdownText.innerHTML = `Player Breakdown: <b>${json.player.name}</b>`;
 				rankText.innerText = `Rank: ${json.player.rank}`;

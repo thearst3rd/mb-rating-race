@@ -124,6 +124,14 @@
 
 				res = await fetch(`../missionscores/${missionId}`);
 				json = await res.json();
+				if (res.status != 200) {
+					console.error("Error!");
+					if (json !== null)
+						console.log(json);
+					fetchingText.innerText = `Could not fetch scores for mission ID ${missionId}!`;
+					currentlyPolling = false;
+					return;
+				}
 
 				missionBreakdownText.innerHTML = `Mission Leaderboard: <b>${json.mission.name}</b>`;
 
