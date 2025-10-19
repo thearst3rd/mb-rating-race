@@ -45,10 +45,10 @@
 		fetchingText.innerText = "Fetching missions...";
 
 		const usp = new URLSearchParams(window.location.search);
-		const playerName = usp.get("player");
-		if (!playerName) {
-			console.error("You must supply a player name!");
-			fetchingText.innerText = "No player provided!";
+		const playerId = usp.get("playerId");
+		if (!playerId) {
+			console.error("You must supply a playerId!");
+			fetchingText.innerText = "No player ID provided!";
 		}
 
 		let lastUpdated = undefined;
@@ -174,10 +174,10 @@
 
 				createTable(json);
 
-				res = await fetch(`../playerscores/${playerName}`);
+				res = await fetch(`../playerscores/${playerId}`);
 				json = await res.json();
 
-				playerBreakdownText.innerHTML = `Player Breakdown: <b>${playerName}</b>`;
+				playerBreakdownText.innerHTML = `Player Breakdown: <b>${json.player.name}</b>`;
 				rankText.innerText = `Rank: ${json.player.rank}`;
 				totalRatingText.innerText = `Total Score: ${formatRating(json.player.totals.total)}`;
 
@@ -244,7 +244,7 @@
 			currentlyPolling = false;
 		}
 
-		if (playerName) {
+		if (playerId) {
 			loadData();
 			pollInterval = setInterval(poll, 3 * 1000);
 		}

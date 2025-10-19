@@ -23,6 +23,7 @@ interface Mission {
 }
 
 interface Player {
+	id: number;
 	username: string;
 	name: string;
 	startTime: Date | undefined;
@@ -37,6 +38,7 @@ interface Player {
 interface Score {
 	id: number;
 	mission_id: number;
+	user_id: number;
 	username: string;
 	name: string;
 	score: number;
@@ -130,8 +132,9 @@ let exceptions: Array<{user: string, startTime: Date, endTime: Date}>;
 let playerAllScores: Record<string, Array<Score>>; // {player_name: [scores]}
 let missionTopScores: Record<number, Array<Score>>; // {mission_id: [scores]}
 
-function createPlayer(username: string, name: string): Player {
+function createPlayer(id: number, username: string, name: string): Player {
 	const player: Player = {
+		id: id,
 		username: username,
 		name: name,
 		startTime: undefined,
@@ -197,7 +200,7 @@ function calcScores(allScores: Array<Score>): void {
 	console.log("Adding scores");
 	for (const score of allScores) {
 		if (!(score.name in players)) {
-			players[score.name] = createPlayer(score.username, score.name);
+			players[score.name] = createPlayer(score.user_id, score.username, score.name);
 		}
 		const player = players[score.name];
 		const mission = (missionReference as Record<number, Mission>)[score.mission_id];
@@ -386,19 +389,19 @@ app.get("/lastupdated", (req, res) => {
 	});
 })
 
-app.get("/lastupdated/:player", (req, res) => {
+app.get("/lastupdated/:playerId", (req, res) => {
 	if (!scores) {
 		res.status(500);
 		res.json({error: "Please wait lmao"});
 		return;
 	}
-	if (!("player" in req.params)) {
+	if (!("playerId" in req.params)) {
 		res.status(400);
 		res.json({error: "What player lmao"});
 		return;
 	}
 	for (const player of scores) {
-		if (player.name === req.params.player) {
+		if (player.id === Number(req.params.playerId)) {
 			res.json({
 				lastUpdated: lastUpdated,
 				latestPB: player.latestPB,
@@ -432,19 +435,19 @@ app.get("/scores", (req, res) => {
 	});
 })
 
-app.get("/playerscores/:player", (req, res) => {
+app.get("/playerscores/:playerId", (req, res) => {
 	if (!scores) {
 		res.status(500);
 		res.json({error: "Please wait lmao"});
 		return;
 	}
-	if (!("player" in req.params)) {
+	if (!("playerId" in req.params)) {
 		res.status(400);
 		res.json({error: "What player lmao"});
 		return;
 	}
 	for (const player of scores) {
-		if (player.name === req.params.player) {
+		if (player.id === Number(req.params.playerId)) {
 			res.json({
 				startTime: startTime,
 				endTime: endTime,
@@ -457,19 +460,19 @@ app.get("/playerscores/:player", (req, res) => {
 	res.json({error: "Player not found"});
 })
 
-app.get("/missionscores/:mission", (req, res) => {
+app.get("/missionscores/:missionId", (req, res) => {
 	if (!missionTopScores || !missionReference) {
 		res.status(500);
 		res.json({error: "Please wait lmao"});
 		return;
 	}
-	if (!("mission" in req.params)) {
+	if (!("missionId" in req.params)) {
 		res.status(400);
 		res.json({error: "What player lmao"});
 		return;
 	}
 	for (const [missionId, scores] of Object.entries(missionTopScores)) {
-		if (missionId == req.params.mission) {
+		if (missionId == req.params.missionId) {
 			res.json({
 				mission: missionReference[Number(missionId)],
 				scores: scores,

@@ -90,7 +90,7 @@
 				}
 				const row = scoreTable.insertRow();
 				row.insertCell().innerText = lastRank;
-				row.insertCell().innerHTML = `<a href="../player?player=${score.name}">${score.name}</a>`;
+				row.insertCell().innerHTML = `<a href="../player?playerId=${score.user_id}">${score.name}</a>`;
 				row.insertCell().innerText = score.id;
 				row.insertCell().innerText = score.score_type === "time" ? formatTime(score.score) : score.score;
 				row.insertCell().innerText = formatTime(Math.abs(score.total_bonus));
