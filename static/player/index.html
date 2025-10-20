@@ -45,7 +45,7 @@
 		fetchingText.innerText = "Fetching missions...";
 
 		const usp = new URLSearchParams(window.location.search);
-		const playerId = usp.get("playerId");
+		const playerId = usp.has("playerId") ? Number(usp.get("playerId")) : undefined;
 		if (!playerId) {
 			console.error("You must supply a playerId!");
 			fetchingText.innerText = "No player ID provided!";
@@ -157,7 +157,7 @@
 
 		async function loadData() {
 			try {
-				let res = await fetch("../lastupdated");
+				let res = await fetch(`../lastupdated/player/${playerId}`);
 				if (res.status != 200) {
 					console.error("Couldn't fetch last updated...");
 					currentlyPolling = false;
@@ -231,7 +231,7 @@
 					return;
 				}
 				currentlyPolling = true;
-				const res = await fetch("../lastupdated");
+				const res = await fetch(`../lastupdated/player/${playerId}`);
 				if (res.status != 200) {
 					console.error("Couldn't fetch last updated...");
 					currentlyPolling = false;
